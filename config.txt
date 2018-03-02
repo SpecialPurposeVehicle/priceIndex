@@ -1,0 +1,6 @@
+dataDir=public/data
+database=lambeth.sqlite
+town=London
+district=lambeth
+estate=Cressingham
+streets=HARDEL+WALK PAPWORTH+WAY BODLEY+MANOR+WAY CHANDLERS+WAY CROSBY+WALK CROSBY+WAY HAMBRIDGE+WAY LONGFORD+WALK ROPERS+WALK SCARLETTE+MANOR+WAY UPGROVE+MANOR+WAY

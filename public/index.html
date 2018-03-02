@@ -1,0 +1,282 @@
+<head>
+  <!-- Plotly.js -->
+  <script src="plotly-latest.min.js"></script>
+  <style>
+    html{
+        font-family:verdana;
+    }
+    .container{
+        display: flex;
+        justify-content: space-around;
+        align-items: stretch;
+        font-size:0.9em;
+    }
+    .container div{
+        padding-top:0px;
+    }
+    .box1{
+        flex-grow:2;
+        width:50%;
+        padding:5px;
+        border:1px solid #ccc;
+    }
+    .box2{
+        width:50%;
+        padding:5px;
+        flex-grow:4;
+        border:1px solid #ccc;
+    }
+    #dataDiv{
+        overflow:scroll;
+
+        border:1px solid #ccc;
+        box-flex:2;
+    }
+    .modebar-btn{
+        display:none;
+    }
+    #footer{
+        border-top:1px solid #ccc;
+        margin-top:3em;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="myDiv"><!-- Plotly chart will be drawn inside this DIV --></div>
+  <div class="container">
+      <div id="dataDiv" class="box1" >
+          <h3>Data</h3>
+          <p>The data used to generate this graph is obtained from five different sources and is automatically updated on a daily basis:</p>
+          <ol>
+            <li>The Land Registry which provides house price data for every street on Cressingham Gardens. </li>
+            <li>The Land Registry which provides monthly average house prices in the London Borough of Lambeth. </li>
+             <li>An Freedom Of Information request to Lambeth Council which lists the number of beds against each property on Cressingham Gardens Estate.</li>
+             <li>Registered Institute of Charted Surveyors (RICS). In January 2015 some Cressingham residents paid for a valuation of their properties to provide a baseline valuation of their homes relativly early on in the regneration process.</li>
+             <li>New build indicitive valuations published by Lambeth Council 2014. These figures incremnent based on a 5% increase per year.<!--Within email to Anna Allan 15th Dec 2016)--></li>
+          </ol>
+          These data-sets are merged together to create the data-set listed below which is used to generate the graph:
+          <hr />
+          <div id="dataContent"><!--Housing Data--></div>
+      </div>
+      <div class="box2">
+          <h3>Notes</h3>
+          <p>Using the graph:</p>
+          <ul>
+           <li>Rollover each marker to view the property address and sale value.</li>
+           <li>Double click on '3 bed' etc. to just show those markers.</li>
+           <li>Single click on '3 bed' etc. show or hide those markers.</li>
+         </ul>
+         <p>Comments on the data:</p>
+          <ol>
+              <li>The graph indicates that Lambeth Councils 2012 proposal to regenerate Cressingham Gardens Estate, and subsequent decison to demolish, has depressed property values.</li>
+              <li>The RICS valuations that can be seen at early 2015 (see data notes) support the idea that property prices are lower because of Lambeths regeneration proposals.</li>
+              <li>The RICS valuations also indicate the 1 bed properties are massivly under-valued.</li>
+          </p>
+      </div>
+  </div>
+  <script>
+    var xmax=0,xmin=10000000000000,ymax=0,ymin=10000000000,dataDiv="";
+
+    // Grab .csv data
+    function makePlot() {
+      var file = "data/lambeth-Cressingham.hpi.csv";
+      var file = "data/data.csv"
+      Plotly.d3.csv(file, function(data){ processData(data) } );
+    };
+
+    // Process the data ready for display
+    function processData(allRows) {
+        var data = parseCsv(allRows);
+        makePlotly(data);
+    }
+
+    // Parse csv
+    function parseCsv(allRows){
+        var row = {}, address="", data=[], bedtraces = {};
+        alldata = basetrace('All data')
+        for (var key in allRows[0]) {
+            dataDiv+=key+', '
+        }
+        dataDiv+= '\n';
+        for (var i=0; i<allRows.length; i++) {
+            // Prep vars
+            row = allRows[i];
+            address = row['paon']+' '+row['street']+'<br />'+row['postcode']+ '<br />'+row['tag']
+            // Generate a traces
+            alldata.x.push( row['deed_date'] );
+            alldata.y.push( row['price_paid'] );
+            alldata.text.push(address);
+            // By bed size
+            if(row['dataset']=='RICS'){
+                key = 'RICS '+row['tag']
+                address = 'Estimate for "'+row['tag']+' property from<br />a RICS registered surveyor paid for by cressingham residents'
+            }else if(row['dataset']=='NEW-BUILD'){
+                key = '1/2/3 bed new-builds '
+                address = 'Lambeths estimate for a<br />new-build "'+row['tag']+"\" property"
+            }else if(row['tag']=='lambeth average'){
+                address = row['tag']
+                key = row['tag']
+            }else{
+                key = row['tag']
+            }
+            if (key in bedtraces) {
+
+            }else{
+                if(key.indexOf("average") >-1){
+                    bedtraces[key] = basetrace(key,'line')
+                }else{
+                    bedtraces[key] = basetrace(key,'markers')
+                }
+
+            }
+            bedtraces[key].x.push( row['deed_date'] );
+            bedtraces[key].y.push( row['price_paid'] );
+            bedtraces[key].text.push( address);
+            // Prep min/max figures
+            ymax = maxmin('max', row['price_paid']+0, ymax);
+            ymin = maxmin('min', row['price_paid']+0, ymin);
+            timecode = gettimecode(row['deed_date']);
+            xmax = maxmin('max', timecode, xmax);
+            xmin = maxmin('min', timecode, xmin);
+            // Prep the data for a DIV
+            for (var key in row) {
+                if(row['dataset']!='RICS'){
+                    dataDiv+=row[key]
+                }
+            }
+            if(row['dataset']!='RICS'){
+                dataDiv+='\n';
+            }
+            // Print all data to the console
+            //console.log(row);
+        }
+        for (var key in bedtraces) {
+            data.push(buildTrace(bedtraces[key]));
+        }
+        //data.push(buildTrace(alldata));
+        xmax = xmax+31557600000; // add a year
+        xmin = xmin-31557600000; // minus a year
+        //console.log('yMAX:'+ymax+' yMIN:'+ymin)
+        //console.log('xMAX:'+xmax+' xMIN:'+xmin)
+        //console.log('XmaxDate:'+new Date(xmax));
+        //console.log('XminDate:'+new Date(xmin));
+        return data;
+    }
+
+    const numberWithCommas = (x) => {
+        return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+
+    function maxmin(memax, mnew, mold){
+        if(memax=="max"){
+            if(mnew>mold){
+                return mnew;
+            }else{
+                return mold;
+            }
+        }else if(memax=="min"){
+            if(mnew<mold){
+                return mnew;
+            }else{
+                return mold;
+            }
+        }
+    }
+
+    function gettimecode(myDate){
+        myDate=myDate.split("-");
+        var newDate=myDate[0]+"/"+myDate[1]+"/"+myDate[2];
+        return new Date(newDate).getTime();
+    }
+
+    // Generate an example trace
+    function fakeTrace(name){
+        trace =  {
+            name:name,
+            x: ['2013-10-04', '2013-11-04', '2013-12-04', '2014-01-04', '2014-02-04'],
+            y: [1, 6, 3, 6, 1],
+            text: ['A', 'B', 'C', 'D', 'E']
+        }
+        return buildTrace(trace);
+    }
+
+    // Base variabkles for a trace
+    function basetrace(myname, mymode='markers'){
+        return {x:[],y:[],text:[],name:myname,mode:mymode}
+    }
+
+    // Build trace
+    function buildTrace(trace){
+        return trace = {
+          x: trace['x'],
+          y: trace['y'],
+          text: trace['text'],
+          type: 'scatter',
+          mode:trace['mode'],
+          name: trace['name'],
+          marker: { size: 12 }
+        };
+    }
+
+    // Build the layout
+    function makePlotly(data){
+        var today = new Date();
+        var dd = today.getDate();
+        var mm = today.getMonth()+1; //January is 0!
+        var yyyy = today.getFullYear()+10;
+        var end = yyyy+'-'+mm+'-'+dd;
+        var layout = {
+          xaxis: {
+            range: [xmin, xmax]
+            //range: ['1994-01-01', '2025-01-01'],
+            //autorange: true
+          },
+          yaxis: {
+            range: [0, ymax]//,
+            //autorange: true
+          },
+          title:'Cressingham Gardens House Prices'
+
+          /*,shapes: [
+              {
+                type: 'line',
+                xref: 'x',
+                yref: 'y',
+                x0: '2000-01-01',
+                y0: 70000,
+                x1: end,
+                y1: 590000,
+                line: {
+                  color: 'rgb(255,127,14)',
+                  width: 1
+                }
+              }
+          ]*/
+
+        };
+        Plotly.newPlot('myDiv', data, layout);
+        document.getElementById("dataContent").innerHTML="<pre>"+dataDiv+"</pre>";
+    };
+
+    // Generate the scatterplot
+    makePlot();
+
+  </script>
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-2281262-34"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-2281262-34');
+  </script>
+
+<div id="footer">
+Created 2018 by Tom Keene as part of <a href="http://db-estate.co.uk">db-estate.co.uk</div>
+</div>
+
+</body>

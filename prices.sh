@@ -1,3 +1,4 @@
+#!/bin/bash
 # GRAB A LIST OF HOUSE PRICES FOR A LIST OF STREETS
 
 TOWN=$1                                # London                  #

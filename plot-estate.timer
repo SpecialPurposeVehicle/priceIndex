@@ -1,0 +1,9 @@
+[Unit]
+Description=Run plot-estate
+
+[Timer]
+OnCalendar=daily
+Persistent=true   
+
+[Install]
+WantedBy=timer.target

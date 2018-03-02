@@ -1,3 +1,4 @@
+#!/bin/bash
 # GRAB HOUSE PRICE DATA FOR STREETS
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 cd $DIR

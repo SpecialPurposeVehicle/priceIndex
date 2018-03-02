@@ -1,0 +1,9 @@
+[Unit]
+Description=Run db-estate.co.uk plot script
+
+[Service]
+Type=oneshot
+ExecStart= /srv/staticsites/plot.db-estate/run.sh 
+
+[Install]
+WantedBy=multi-user.target

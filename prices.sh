@@ -25,9 +25,11 @@ echo -e "     Generated \"$OUTPUTFILE\" file with colums:\n     $H"
 
 # Grab the averages for the region & stripout colums of uneeded data
 FROM='1993-01-01'
-TO='2018-01-01'
+TO=$(date +'%Y-%m-%d')
+#'2018-03-15'
 echo "     Grabbed monthly average house prices for $DISTRICT from $FROM to $TO"
 URL="http://landregistry.data.gov.uk/app/ukhpi/download/new.csv?from=$FROM&to=$TO&location=http%3A%2F%2Flandregistry.data.gov.uk%2Fid%2Fregion%2F$DISTRICT"
+echo $URL
 wget $URL -O /tmp/data.csv &> /dev/null
 cut -d, -f4,7 /tmp/data.csv | \
 awk -F"," 'BEGIN { OFS = "," } {$1=$1"-01";$8="dataset";$7="'$DISTRICT'";$6="'$TOWN'"; print}' |\
